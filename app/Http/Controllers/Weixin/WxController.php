@@ -76,7 +76,7 @@ class WxController extends Controller
     {
         $key = 'wx_access_token';
         $token = Redis::get($key);
-        if(!$token){
+        if($token){
             echo 'cache';
 //            return $token;
         }else{
