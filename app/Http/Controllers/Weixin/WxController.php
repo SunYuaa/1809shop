@@ -59,9 +59,9 @@ class WxController extends Controller
                     'headimgurl' => $userInfo['headimgurl'],
                     'subscribe_time' => $userInfo['subscribe_time'],
                 ];
-                $id = WxUserModel::insert($u_info);
+                $id = WxUserModel::insertGetId($u_info);
 
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注' . $u_info['nickname'] . ']]></Content></xml>';
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注' . $userInfo['nickname'] . ']]></Content></xml>';
                 echo '关注';
             }
         }
