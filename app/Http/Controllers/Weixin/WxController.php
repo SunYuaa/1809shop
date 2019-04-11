@@ -43,7 +43,7 @@ class WxController extends Controller
                 'openid'=>$openid
             ];
             $local_user = WxUserModel::where($where)->get();
-            var_dump($local_user);die;
+            var_dump($local_user);
             if ($local_user) {   //之前关注过
                 echo '之前关注过';
                 echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来' . $local_user['nickname'] . ']]></Content></xml>';
