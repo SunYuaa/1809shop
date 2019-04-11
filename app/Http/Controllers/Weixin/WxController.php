@@ -42,7 +42,7 @@ class WxController extends Controller
             $where = [
                 'openid'=>$openid
             ];
-            $local_user = WxUserModel::select();
+            $local_user = WxUserModel::where($where)->get();
 
             if ($local_user) {   //之前关注过
                 echo '之前关注过';
