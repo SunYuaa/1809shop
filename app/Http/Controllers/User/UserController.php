@@ -11,8 +11,8 @@ class UserController extends Controller
 {
     //user
     public function test(){
-        $data  = IndexUserModel::select();
-        dd($data);
+        $data  = IndexUserModel::first()->toArray();
+        print_r($data);die;
         $key = 'tmp:aaa';
         $val = 'aaaaaaa';
         $rs = Redis::set($key,$val);		//设置键值
