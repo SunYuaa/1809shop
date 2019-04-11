@@ -37,20 +37,20 @@ class WxController extends Controller
         $event = $data->Event;          //时间类型
 
         //扫码关注自动回复消息
-//        if($event=='subscribe') {
-//            //根据openid判断用户是否存在
-//            $where = [
-//                'openid'=>$openid
-//            ];
-//            $local_user = WxUserModel::select();
-//
-//            if ($local_user) {   //之前关注过
-//                echo '之前关注过';
-//                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来' . $local_user['nickname'] . ']]></Content></xml>';
-//            } else {             //首次关注
+        if($event=='subscribe') {
+            //根据openid判断用户是否存在
+            $where = [
+                'openid'=>$openid
+            ];
+            $local_user = WxUserModel::select();
+
+            if ($local_user) {   //之前关注过
+                echo '之前关注过';
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来' . $local_user['nickname'] . ']]></Content></xml>';
+            } else {             //首次关注
                 //获取用户信息
                 $userInfo = $this->getUserInfo($openid);
-                print_r($userInfo);
+
                 //入库
                 $u_info = [
                     'openid' => $userInfo['openid'],
@@ -59,15 +59,14 @@ class WxController extends Controller
                     'headimgurl' => $userInfo['headimgurl'],
                     'subscribe_time' => $userInfo['subscribe_time'],
                 ];
-                print_r($u_info);
                 $id = WxUserModel::insert($u_info);
-                dump($id);
-//                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注' . $u_info['nickname'] . ']]></Content></xml>';
-//                echo '关注';
-//            }
-//        }else{
-//            echo 'oh no';
-//        }
+
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注' . $u_info['nickname'] . ']]></Content></xml>';
+                echo '关注';
+            }
+        }else{
+            echo 'oh no';
+        }
     }
 
     /*
