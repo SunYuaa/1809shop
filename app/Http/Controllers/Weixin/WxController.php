@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Redis;
 use App\Model\User\WxUserModel;
+use GuzzleHttp\Client;
 
 class WxController extends Controller
 {
@@ -48,7 +49,7 @@ class WxController extends Controller
             $local_user = WxUserModel::where($where)->first();
             print_r($local_user);
             if ($local_user) {   //之前关注过
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来' . $local_user['nickname'] . ']]></Content></xml>';
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
             } else {             //首次关注
                 //获取用户信息
                 $userInfo = $this->getUserInfo($openid);
@@ -63,7 +64,7 @@ class WxController extends Controller
                 ];
                 $id = WxUserModel::insertGetId($u_info);
 
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注' . $userInfo['nickname'] . ']]></Content></xml>';
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
             }
         }
     }
@@ -100,7 +101,21 @@ class WxController extends Controller
 
         $json_str = json_encode($menu_data,JSON_UNESCAPED_UNICODE);  //处理中文编码
         //发送请求
-        $client = new Clinet();
+        $client = new Client();
+        $response = $client->request('POST',$url,[      //发送 json字符串
+            'body'  => $json_str
+        ]);
+
+        //处理响应
+        $res_str = $response->getBody();
+        $arr = json_decode($res_str,true);
+
+        //判断错误信息
+        if($arr['errcode']>0){
+            echo '创建菜单失败';
+        }else{
+            echo '创建菜单成功';
+        }
 
 
     }
