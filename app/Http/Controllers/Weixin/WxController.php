@@ -15,6 +15,9 @@ class WxController extends Controller
         echo $_GET['echostr'];
     }
 
+    /**
+     * 扫描二维码自动回复
+     */
     public function event()
     {
         //接受服务器推送
@@ -45,7 +48,6 @@ class WxController extends Controller
             $local_user = WxUserModel::where($where)->first();
             print_r($local_user);
             if ($local_user) {   //之前关注过
-                echo '之前关注过';
                 echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来' . $local_user['nickname'] . ']]></Content></xml>';
             } else {             //首次关注
                 //获取用户信息
@@ -62,13 +64,49 @@ class WxController extends Controller
                 $id = WxUserModel::insertGetId($u_info);
 
                 echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注' . $userInfo['nickname'] . ']]></Content></xml>';
-                echo '关注';
             }
         }
     }
 
-    /*
+    public function getMenu()
+    {
+        //url
+        $url = ' https://api.weixin.qq.com/cgi-bin/menu/create?access_token='.$this->getAccessToken();
+        //菜单数据
+        $menu_data = [
+            'button'    => [
+                [
+                    'type'  => 'click',
+                    'name'  => '歌曲',
+                    'key'   => 'key_menu_001'
+                ],
+                [
+                    'name'  => '点击',
+                    'sub_button'  => [
+                        [
+                            'type'  => 'click',
+                            'name'  => '天气',
+                            'key'   => 'key_menu_002'
+                        ],
+                        [
+                            "type" => "click",
+                            "name" => "赞一下我们",
+                            "key"  => "key_menu_003"
+                        ],
+                    ]
+                ],
+            ]
+        ];
+
+        $json_str = json_encode($menu_data,JSON_UNESCAPED_UNICODE);  //处理中文编码
+        //发送请求
+        $client = new Clinet();
+
+
+    }
+    /**
      * 获取微信accessToken
+     * @return mixed
      */
     public function getAccessToken()
     {
