@@ -116,8 +116,7 @@ class WxController extends Controller
         }else{
             echo '创建菜单成功';
         }
-
-
+        
     }
     /**
      * 获取微信accessToken
