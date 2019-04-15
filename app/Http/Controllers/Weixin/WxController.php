@@ -40,6 +40,10 @@ class WxController extends Controller
         $wx_id = $data->ToUserName;     //公众号id
         $openid = $data->FromUserName;  //用户OpenId
         $event = $data->Event;          //时间类型
+        
+        print_r($data);die;
+
+
 
         //扫码关注自动回复消息
         if($event=='subscribe') {
@@ -48,7 +52,6 @@ class WxController extends Controller
                 'openid'=>$openid
             ];
             $local_user = WxUserModel::where($where)->first();
-            print_r($local_user);
             if ($local_user) {   //之前关注过
                 echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
             } else {             //首次关注
@@ -69,7 +72,11 @@ class WxController extends Controller
             }
         }
     }
-    //自定义菜单
+
+    /**
+     * 自定义菜单
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function getMenu()
     {
         //url
@@ -125,6 +132,7 @@ class WxController extends Controller
         }
 
     }
+
     /**
      * 获取微信accessToken
      * @return mixed
