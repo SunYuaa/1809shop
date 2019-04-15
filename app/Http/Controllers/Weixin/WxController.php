@@ -27,6 +27,7 @@ class WxController extends Controller
         $time = date("Y-m-d H:i:s");
         $str = $time . $content . "\n";
         file_put_contents("logs/wx_event.log", $str, FILE_APPEND);
+
         $data = simplexml_load_string($content);
 
 //        echo "ToUserName:".$data->ToUserName;echo '</br>';      //公众号ID
@@ -68,7 +69,7 @@ class WxController extends Controller
             }
         }
     }
-
+    //自定义菜单
     public function getMenu()
     {
         //url
@@ -77,25 +78,31 @@ class WxController extends Controller
         $menu_data = [
             'button'    => [
                 [
-                    'type'  => 'click',
-                    'name'  => '歌曲',
-                    'key'   => 'key_menu_001'
-                ],
-                [
-                    'name'  => '点击',
-                    'sub_button'  => [
+                    "name" => "菜单",
+                    "sub_button" => [
                         [
-                            'type'  => 'click',
-                            'name'  => '天气',
-                            'key'   => 'key_menu_002'
+                            "type" => "view",
+                            "name" => "百度一下",
+                            "url" => "http://www.baidu.com/"
                         ],
                         [
-                            "type" => "click",
-                            "name" => "赞一下我们",
-                            "key"  => "key_menu_003"
-                        ],
+                        "type" => "click",
+                        "name" => "赞一下",
+                        "key" => "menu_key001"
+                        ]
                     ]
                 ],
+                [
+                    "type" => "pic_sysphoto",
+                    "name" => "拍照",
+                    "key" => "rselfmenu_1_0",
+                    "sub_button" => [ ]
+                ],
+                [
+                    "name" => "发送位置",
+                    "type" => "location_select",
+                    "key" => "rselfmenu_2_0"
+                ]
             ]
         ];
 
@@ -116,7 +123,7 @@ class WxController extends Controller
         }else{
             echo '创建菜单成功';
         }
-        
+
     }
     /**
      * 获取微信accessToken
@@ -128,7 +135,6 @@ class WxController extends Controller
         $token = Redis::get($key);
         if($token){
             echo 'cache';
-//            return $token;
         }else{
             echo 'Nocache';
             $url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid='.env('WX_APPID').'&secret='.env('WX_SECRET').'';
