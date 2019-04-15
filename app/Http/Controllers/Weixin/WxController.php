@@ -40,8 +40,8 @@ class WxController extends Controller
         $wx_id = $data->ToUserName;     //公众号id
         $openid = $data->FromUserName;  //用户OpenId
         $event = $data->Event;          //时间类型
-        
-        print_r($data);die;
+
+        dump($data);die;
 
 
 
