@@ -2,11 +2,17 @@
 
 namespace App\Http\Controllers\Weixin;
 
+use DemeterChain\C;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Redis;
 use App\Model\User\WxUserModel;
+use App\Model\Weixin\WxTextModel;
+use App\Model\Weixin\WxImgModel;
+use App\Model\Weixin\WxVoiceModel;
 use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Uri;
+use Illuminate\Support\Facades\Storage;
 
 class WxController extends Controller
 {
@@ -17,7 +23,7 @@ class WxController extends Controller
     }
 
     /**
-     * 扫描二维码自动回复
+     * 微信事件
      */
     public function event()
     {
@@ -39,11 +45,8 @@ class WxController extends Controller
 
         $wx_id = $data->ToUserName;     //公众号id
         $openid = $data->FromUserName;  //用户OpenId
-        $event = $data->Event;          //时间类型
-
-        dump($data);die;
-
-
+        $event = $data->Event;          //事件类型
+        $MsgType = $data->MsgType;      //素材类型
 
         //扫码关注自动回复消息
         if($event=='subscribe') {
@@ -71,6 +74,77 @@ class WxController extends Controller
                 echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
             }
         }
+        //处理文本内容素材
+        if($MsgType=='text'){
+            //获取用户信息
+            $textData = [
+                'openid' => $data->FromUserName,
+                'createTime' => $data->CreateTime,
+                'content' => $data->Content
+            ];
+            $res = WxTextModel::insert($textData);
+            if($res){
+                echo '内容添加成功';
+            }else{
+                echo '内容添加失败';
+            }
+        }
+        //处理图片素材
+        if($MsgType=='image'){
+            $media_id = $data->MediaId;
+
+            //media_id Url
+            $url = 'https://api.weixin.qq.com/cgi-bin/media/get?access_token='.$this->getAccessToken().'&media_id='.$media_id;
+            $client = new Client();
+            $response = $client->get(new Uri($url));
+
+            $headers = $response->getHeaders();               //获取响应头信息
+            $img_file = $headers['Content-disposition'][0];   //图片信息
+
+            $file_name = rtrim(substr($img_file,-20),'"');
+            $new_file_name = 'weixin/'.substr(md5(time().mt_rand(11111,99999)),10,8).'_'.$file_name;
+
+            $info = Storage::put($new_file_name,$response->getBody());   //保存图片
+            if($info){
+                //获取用户信息
+                $imgData = [
+                    'openid' => $data->FromUserName,
+                    'createTime' => $data->CreateTime,
+                    'imageurl' => 'storage/app/'.$new_file_name
+                ];
+                $res = WxImgModel::insert($imgData);
+                if($res){
+                    echo '图片添加成功';
+                }else{
+                    echo '图片添加失败';
+                }
+            }
+
+        }
+        //处理语音素材
+        if($MsgType=='voice'){
+            $media_id = $data->MediaId;
+            $url = 'https://api.weixin.qq.com/cgi-bin/media/get?access_token='.$this->getAccessToken().'&media_id='.$media_id;
+            $amr_data = file_get_contents($url);
+            $file_name = time().mt_rand(11111,99999).'.amr';
+            $info = file_put_contents('weixin/voice/'.$file_name,$amr_data);
+
+            if($info){
+                //获取用户信息
+                $amrData = [
+                    'openid' => $data->FromUserName,
+                    'createTime' => $data->CreateTime,
+                    'voice' => 'public/weixin/voice/'.$file_name
+                ];
+                $res = WxVoiceModel::insert($amrData);
+                if($res){
+                    echo '语音保存成功';
+                }else{
+                    echo '语音保存失败';
+                }
+            }
+        }
+
     }
 
     /**

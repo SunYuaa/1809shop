@@ -125,6 +125,7 @@ return [
             'password' => env('REDIS_PASSWORD', null),
             'port' => env('REDIS_PORT', 6379),
             'database' => env('REDIS_DB', 0),
+            'prefix' => '1809_'                 //redis 标识前缀
         ],
 
         'cache' => [
