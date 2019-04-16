@@ -6,7 +6,7 @@ use DemeterChain\C;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Redis;
-use App\Model\User\WxUserModel;
+use App\Model\Weixin\WxUserModel;
 use App\Model\Weixin\WxTextModel;
 use App\Model\Weixin\WxImgModel;
 use App\Model\Weixin\WxVoiceModel;
