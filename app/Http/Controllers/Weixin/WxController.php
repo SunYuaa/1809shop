@@ -86,18 +86,18 @@ class WxController extends Controller
                 }
             }
 
-//            //获取用户信息 存入数据库
-//            $textData = [
-//                'openid' => $data->FromUserName,
-//                'createTime' => $data->CreateTime,
-//                'content' => $data->Content
-//            ];
-//            $res = WxTextModel::insert($textData);
-//            if($res){
-//                echo '内容添加成功';
-//            }else{
-//                echo '内容添加失败';
-//            }
+            //获取用户信息 存入数据库
+            $textData = [
+                'openid' => $data->FromUserName,
+                'createTime' => $data->CreateTime,
+                'content' => $data->Content
+            ];
+            $res = WxTextModel::insert($textData);
+            if($res){
+                echo '内容添加成功';
+            }else{
+                echo '内容添加失败';
+            }
         }
         //处理图片素材
         if($MsgType=='image'){
