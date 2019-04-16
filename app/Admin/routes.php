@@ -12,4 +12,7 @@ Route::group([
 
     $router->get('/', 'HomeController@index');
 
+    //微信 用户管理
+    $router->resource('weixin/users', UserController::class);
+
 });

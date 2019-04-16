@@ -2,10 +2,17 @@
 
 namespace App\Http\Controllers\Weixin;
 
+use DemeterChain\C;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Redis;
-use App\Model\User\WxUserModel;
+use App\Model\Weixin\WxUserModel;
+use App\Model\Weixin\WxTextModel;
+use App\Model\Weixin\WxImgModel;
+use App\Model\Weixin\WxVoiceModel;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Uri;
+use Illuminate\Support\Facades\Storage;
 
 class WxController extends Controller
 {
@@ -16,7 +23,7 @@ class WxController extends Controller
     }
 
     /**
-     * 扫描二维码自动回复
+     * 微信事件
      */
     public function event()
     {
@@ -26,6 +33,7 @@ class WxController extends Controller
         $time = date("Y-m-d H:i:s");
         $str = $time . $content . "\n";
         file_put_contents("logs/wx_event.log", $str, FILE_APPEND);
+
         $data = simplexml_load_string($content);
 
 //        echo "ToUserName:".$data->ToUserName;echo '</br>';      //公众号ID
@@ -37,8 +45,115 @@ class WxController extends Controller
 
         $wx_id = $data->ToUserName;     //公众号id
         $openid = $data->FromUserName;  //用户OpenId
-        $event = $data->Event;          //时间类型
+        $event = $data->Event;          //事件类型
+        $MsgType = $data->MsgType;      //素材类型
+        print_r($data);
+        echo $MsgType;
 
+
+        //处理文本内容素材
+        if($MsgType=='text'){
+            if(strpos($data->Content,'+天气')){
+                $city = explode('+',$data->Content)[0];
+                $url = 'https://free-api.heweather.net/s6/weather/now?key=HE1904161042371857&location='.$city;
+                $weather = json_decode(file_get_contents($url),true);
+                if($weather['HeWeather6'][0]['status']=='ok'){              //检测城市名是否正确
+                    $cond_txt = $weather['HeWeather6'][0]['now']['cond_txt'];   //天气状况描述
+                    $fl = $weather['HeWeather6'][0]['now']['fl'];               //体感温度
+                    $tmp = $weather['HeWeather6'][0]['now']['tmp'];             //摄氏度
+                    $hum = $weather['HeWeather6'][0]['now']['hum'];             //相对湿度
+                    $wind_dir = $weather['HeWeather6'][0]['now']['wind_dir'];   //风向
+                    $wind_sc = $weather['HeWeather6'][0]['now']['wind_sc'];     //风向
+                    $str = date('Y-m-d')."\n".'天气状况: '.$cond_txt."\n".'体感温度:'.$fl."\n".'摄氏度: '.$tmp."\n".'相对湿度: '.$hum."\n".'风向: '.$wind_dir."\n".'风力: '.$wind_sc;
+
+                    $response_xml = '<xml>
+                                      <ToUserName><![CDATA['.$openid.']]></ToUserName>
+                                      <FromUserName><![CDATA['.$wx_id.']]></FromUserName>
+                                      <CreateTime>'.time().'</CreateTime>
+                                      <MsgType><![CDATA[text]]></MsgType>
+                                      <Content><![CDATA['.$str.']]></Content>
+                                    </xml>';
+                    echo $response_xml;
+                }else{
+                    $response_xml = '<xml>
+                                      <ToUserName><![CDATA['.$openid.']]></ToUserName>
+                                      <FromUserName><![CDATA['.$wx_id.']]></FromUserName>
+                                      <CreateTime>'.time().'</CreateTime>
+                                      <MsgType><![CDATA[text]]></MsgType>
+                                      <Content><![CDATA[城市输入错误]]></Content>
+                                    </xml>';
+                    echo $response_xml;
+                }
+            }
+
+//            //获取用户信息 存入数据库
+//            $textData = [
+//                'openid' => $data->FromUserName,
+//                'createTime' => $data->CreateTime,
+//                'content' => $data->Content
+//            ];
+//            $res = WxTextModel::insert($textData);
+//            if($res){
+//                echo '内容添加成功';
+//            }else{
+//                echo '内容添加失败';
+//            }
+        }
+        //处理图片素材
+        if($MsgType=='image'){
+            $media_id = $data->MediaId;
+
+            //media_id Url
+            $url = 'https://api.weixin.qq.com/cgi-bin/media/get?access_token='.$this->getAccessToken().'&media_id='.$media_id;
+            $client = new Client();
+            $response = $client->get(new Uri($url));
+
+            $headers = $response->getHeaders();               //获取响应头信息
+            $img_file = $headers['Content-disposition'][0];   //图片信息
+
+            $file_name = rtrim(substr($img_file,-20),'"');
+            $new_file_name = 'weixin/'.substr(md5(time().mt_rand(11111,99999)),10,8).'_'.$file_name;
+
+            $info = Storage::put($new_file_name,$response->getBody());   //保存图片
+            if($info){
+                //获取用户信息
+                $imgData = [
+                    'openid' => $data->FromUserName,
+                    'createTime' => $data->CreateTime,
+                    'imageurl' => 'storage/app/'.$new_file_name
+                ];
+                $res = WxImgModel::insert($imgData);
+                if($res){
+                    echo '图片添加成功';
+                }else{
+                    echo '图片添加失败';
+                }
+            }
+
+        }
+        //处理语音素材
+        if($MsgType=='voice'){
+            $media_id = $data->MediaId;
+            $url = 'https://api.weixin.qq.com/cgi-bin/media/get?access_token='.$this->getAccessToken().'&media_id='.$media_id;
+            $amr_data = file_get_contents($url);
+            $file_name = time().mt_rand(11111,99999).'.amr';
+            $info = file_put_contents('weixin/voice/'.$file_name,$amr_data);
+
+            if($info){
+                //获取用户信息
+                $amrData = [
+                    'openid' => $data->FromUserName,
+                    'createTime' => $data->CreateTime,
+                    'voice' => 'public/weixin/voice/'.$file_name
+                ];
+                $res = WxVoiceModel::insert($amrData);
+                if($res){
+                    echo '语音保存成功';
+                }else{
+                    echo '语音保存失败';
+                }
+            }
+        }
         //扫码关注自动回复消息
         if($event=='subscribe') {
             //根据openid判断用户是否存在
@@ -46,9 +161,8 @@ class WxController extends Controller
                 'openid'=>$openid
             ];
             $local_user = WxUserModel::where($where)->first();
-            print_r($local_user);
             if ($local_user) {   //之前关注过
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来' . $local_user['nickname'] . ']]></Content></xml>';
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
             } else {             //首次关注
                 //获取用户信息
                 $userInfo = $this->getUserInfo($openid);
@@ -63,11 +177,16 @@ class WxController extends Controller
                 ];
                 $id = WxUserModel::insertGetId($u_info);
 
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注' . $userInfo['nickname'] . ']]></Content></xml>';
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
             }
         }
+
     }
 
+    /**
+     * 自定义菜单
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function getMenu()
     {
         //url
@@ -76,34 +195,54 @@ class WxController extends Controller
         $menu_data = [
             'button'    => [
                 [
-                    'type'  => 'click',
-                    'name'  => '歌曲',
-                    'key'   => 'key_menu_001'
-                ],
-                [
-                    'name'  => '点击',
-                    'sub_button'  => [
+                    "name" => "菜单",
+                    "sub_button" => [
                         [
-                            'type'  => 'click',
-                            'name'  => '天气',
-                            'key'   => 'key_menu_002'
+                            "type" => "view",
+                            "name" => "百度一下",
+                            "url" => "http://www.baidu.com/"
                         ],
                         [
-                            "type" => "click",
-                            "name" => "赞一下我们",
-                            "key"  => "key_menu_003"
-                        ],
+                        "type" => "click",
+                        "name" => "赞一下",
+                        "key" => "menu_key001"
+                        ]
                     ]
                 ],
+                [
+                    "type" => "pic_sysphoto",
+                    "name" => "拍照",
+                    "key" => "rselfmenu_1_0",
+                    "sub_button" => [ ]
+                ],
+                [
+                    "name" => "发送位置",
+                    "type" => "location_select",
+                    "key" => "rselfmenu_2_0"
+                ]
             ]
         ];
 
         $json_str = json_encode($menu_data,JSON_UNESCAPED_UNICODE);  //处理中文编码
         //发送请求
-        $client = new Clinet();
+        $client = new Client();
+        $response = $client->request('POST',$url,[      //发送 json字符串
+            'body'  => $json_str
+        ]);
 
+        //处理响应
+        $res_str = $response->getBody();
+        $arr = json_decode($res_str,true);
+
+        //判断错误信息
+        if($arr['errcode']>0){
+            echo '创建菜单失败';
+        }else{
+            echo '创建菜单成功';
+        }
 
     }
+
     /**
      * 获取微信accessToken
      * @return mixed
@@ -112,9 +251,8 @@ class WxController extends Controller
     {
         $key = 'wx_access_token';
         $token = Redis::get($key);
-        if($token){
+        if(!$token){
             echo 'cache';
-//            return $token;
         }else{
             echo 'Nocache';
             $url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid='.env('WX_APPID').'&secret='.env('WX_SECRET').'';

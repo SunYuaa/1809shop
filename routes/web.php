@@ -26,6 +26,5 @@ Route::get('user/test','User\UserController@test'); //测试redis
 
 //微信接口
 Route::get('weixin/valid','Weixin\WxController@valid');
-
 Route::post('weixin/valid','Weixin\WxController@event');
 Route::get('weixin/access_token','Weixin\WxController@getAccessToken');
