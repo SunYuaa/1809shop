@@ -49,7 +49,7 @@ class WxController extends Controller
         $MsgType = $data->MsgType;      //素材类型
         print_r($data);
         echo $MsgType;
-        die;
+
 
         //处理文本内容素材
         if($MsgType=='text'){
