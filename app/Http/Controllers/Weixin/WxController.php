@@ -48,7 +48,7 @@ class WxController extends Controller
         $event = $data->Event;          //事件类型
         $MsgType = $data->MsgType;      //素材类型
         print_r($data);
-        echo $MsgType;
+//        echo $MsgType;
 
 
         //处理文本内容素材
