@@ -47,9 +47,9 @@ class WxController extends Controller
         $openid = $data->FromUserName;  //用户OpenId
         $event = $data->Event;          //事件类型
         $MsgType = $data->MsgType;      //素材类型
-//        print_r($data);
-//        echo $MsgType;
-
+        print_r($data);
+        echo $MsgType;
+        die;
 
         //处理文本内容素材
         if($MsgType=='text'){
@@ -251,7 +251,7 @@ class WxController extends Controller
     {
         $key = 'wx_access_token';
         $token = Redis::get($key);
-        if($token){
+        if(!$token){
             echo 'cache';
         }else{
             echo 'Nocache';
