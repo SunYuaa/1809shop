@@ -56,7 +56,7 @@ class WxController extends Controller
             ];
             $local_user = WxUserModel::where($where)->first();
             if ($local_user) {   //之前关注过
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '你回来啦~  ' . $local_user['nickname'] . ']]></Content></xml>';
                 $res = WxUserModel::where($where)->update(['sub_status'=>1]);
             } else {             //首次关注
                 //获取用户信息
@@ -226,7 +226,7 @@ class WxController extends Controller
         $openid_list = WxUserModel::where(['sub_status'=>1])->get()->toArray();
         $openid_arr = array_column($openid_list,'openid');
         print_r($openid_arr);
-        $content = '测试测试这是测试再说一遍这是测试over';
+        $content = '测试测试over';
         $response = $this->sendMsg($openid_arr,$content);
         return $response;
     }
@@ -299,7 +299,7 @@ class WxController extends Controller
     {
         $key = 'wx_access_token';
         $token = Redis::get($key);
-        if(!$token){
+        if($token){
             echo 'cache';echo "\n";
         }else{
             echo 'Nocache';echo "\n";
