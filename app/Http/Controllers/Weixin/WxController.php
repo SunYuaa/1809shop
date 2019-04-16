@@ -47,12 +47,36 @@ class WxController extends Controller
         $openid = $data->FromUserName;  //用户OpenId
         $event = $data->Event;          //事件类型
         $MsgType = $data->MsgType;      //素材类型
-        print_r($data);
-//        echo $MsgType;
 
+        //扫码关注自动回复消息
+        if($event=='subscribe') {
+            //根据openid判断用户是否存在
+            $where = [
+                'openid'=>$openid
+            ];
+            $local_user = WxUserModel::where($where)->first();
+            if ($local_user) {   //之前关注过
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
+            } else {             //首次关注
+                //获取用户信息
+                $userInfo = $this->getUserInfo($openid);
 
+                //入库
+                $u_info = [
+                    'openid' => $userInfo['openid'],
+                    'nickname' => $userInfo['nickname'],
+                    'sex' => $userInfo['sex'],
+                    'headimgurl' => $userInfo['headimgurl'],
+                    'subscribe_time' => $userInfo['subscribe_time'],
+                ];
+                $id = WxUserModel::insertGetId($u_info);
+
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
+            }
+        }
         //处理文本内容素材
         if($MsgType=='text'){
+            //天气回复
             if(strpos($data->Content,'+天气')){
                 $city = explode('+',$data->Content)[0];
                 $url = 'https://free-api.heweather.net/s6/weather/now?key=HE1904161042371857&location='.$city;
@@ -154,33 +178,7 @@ class WxController extends Controller
                 }
             }
         }
-        //扫码关注自动回复消息
-        if($event=='subscribe') {
-            //根据openid判断用户是否存在
-            $where = [
-                'openid'=>$openid
-            ];
-            $local_user = WxUserModel::where($where)->first();
-            if ($local_user) {   //之前关注过
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
-            } else {             //首次关注
-                //获取用户信息
-                $userInfo = $this->getUserInfo($openid);
-
-                //入库
-                $u_info = [
-                    'openid' => $userInfo['openid'],
-                    'nickname' => $userInfo['nickname'],
-                    'sex' => $userInfo['sex'],
-                    'headimgurl' => $userInfo['headimgurl'],
-                    'subscribe_time' => $userInfo['subscribe_time'],
-                ];
-                $id = WxUserModel::insertGetId($u_info);
-
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
-            }
-        }
-
+        
     }
 
     /**
