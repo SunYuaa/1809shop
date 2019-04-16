@@ -47,52 +47,58 @@ class WxController extends Controller
         $openid = $data->FromUserName;  //用户OpenId
         $event = $data->Event;          //事件类型
         $MsgType = $data->MsgType;      //素材类型
-        echo $MsgType;
+//        print_r($data);
+//        echo $MsgType;
 
-        //扫码关注自动回复消息
-        if($event=='subscribe') {
-            //根据openid判断用户是否存在
-            $where = [
-                'openid'=>$openid
-            ];
-            $local_user = WxUserModel::where($where)->first();
-            if ($local_user) {   //之前关注过
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
-            } else {             //首次关注
-                //获取用户信息
-                $userInfo = $this->getUserInfo($openid);
 
-                //入库
-                $u_info = [
-                    'openid' => $userInfo['openid'],
-                    'nickname' => $userInfo['nickname'],
-                    'sex' => $userInfo['sex'],
-                    'headimgurl' => $userInfo['headimgurl'],
-                    'subscribe_time' => $userInfo['subscribe_time'],
-                ];
-                $id = WxUserModel::insertGetId($u_info);
-
-                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
-            }
-        }
         //处理文本内容素材
         if($MsgType=='text'){
-            //获取用户信息
-            $textData = [
-                'openid' => $data->FromUserName,
-                'createTime' => $data->CreateTime,
-                'content' => $data->Content
-            ];
-            print_r($textData);
-            $res = WxTextModel::insert($textData);
-            if($res){
-                echo '内容添加成功';
-            }else{
-                echo '内容添加失败';
-            }
-        }
+            if(strpos($data->Content,'+天气')){
+                $city = explode('+',$data->Content)[0];
+                $url = 'https://free-api.heweather.net/s6/weather/now?key=HE1904161042371857&location='.$city;
+                $weather = json_decode(file_get_contents($url),true);
+                if($weather['HeWeather6'][0]['status']=='ok'){              //检测城市名是否正确
+                    $cond_txt = $weather['HeWeather6'][0]['now']['cond_txt'];   //天气状况描述
+                    $fl = $weather['HeWeather6'][0]['now']['fl'];               //体感温度
+                    $tmp = $weather['HeWeather6'][0]['now']['tmp'];             //摄氏度
+                    $hum = $weather['HeWeather6'][0]['now']['hum'];             //相对湿度
+                    $wind_dir = $weather['HeWeather6'][0]['now']['wind_dir'];   //风向
+                    $wind_sc = $weather['HeWeather6'][0]['now']['wind_sc'];     //风向
+                    $str = date('Y-m-d')."\n".'天气状况: '.$cond_txt."\n".'体感温度:'.$fl."\n".'摄氏度: '.$tmp."\n".'相对湿度: '.$hum."\n".'风向: '.$wind_dir."\n".'风力: '.$wind_sc;
 
-        die;
+                    $response_xml = '<xml>
+                                      <ToUserName><![CDATA['.$openid.']]></ToUserName>
+                                      <FromUserName><![CDATA['.$wx_id.']]></FromUserName>
+                                      <CreateTime>'.time().'</CreateTime>
+                                      <MsgType><![CDATA[text]]></MsgType>
+                                      <Content><![CDATA['.$str.']]></Content>
+                                    </xml>';
+                    echo $response_xml;
+                }else{
+                    $response_xml = '<xml>
+                                      <ToUserName><![CDATA['.$openid.']]></ToUserName>
+                                      <FromUserName><![CDATA['.$wx_id.']]></FromUserName>
+                                      <CreateTime>'.time().'</CreateTime>
+                                      <MsgType><![CDATA[text]]></MsgType>
+                                      <Content><![CDATA[城市输入错误]]></Content>
+                                    </xml>';
+                    echo $response_xml;
+                }
+            }
+
+//            //获取用户信息 存入数据库
+//            $textData = [
+//                'openid' => $data->FromUserName,
+//                'createTime' => $data->CreateTime,
+//                'content' => $data->Content
+//            ];
+//            $res = WxTextModel::insert($textData);
+//            if($res){
+//                echo '内容添加成功';
+//            }else{
+//                echo '内容添加失败';
+//            }
+        }
         //处理图片素材
         if($MsgType=='image'){
             $media_id = $data->MediaId;
@@ -146,6 +152,32 @@ class WxController extends Controller
                 }else{
                     echo '语音保存失败';
                 }
+            }
+        }
+        //扫码关注自动回复消息
+        if($event=='subscribe') {
+            //根据openid判断用户是否存在
+            $where = [
+                'openid'=>$openid
+            ];
+            $local_user = WxUserModel::where($where)->first();
+            if ($local_user) {   //之前关注过
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
+            } else {             //首次关注
+                //获取用户信息
+                $userInfo = $this->getUserInfo($openid);
+
+                //入库
+                $u_info = [
+                    'openid' => $userInfo['openid'],
+                    'nickname' => $userInfo['nickname'],
+                    'sex' => $userInfo['sex'],
+                    'headimgurl' => $userInfo['headimgurl'],
+                    'subscribe_time' => $userInfo['subscribe_time'],
+                ];
+                $id = WxUserModel::insertGetId($u_info);
+
+                echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
             }
         }
 
