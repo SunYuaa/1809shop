@@ -57,6 +57,7 @@ class WxController extends Controller
             $local_user = WxUserModel::where($where)->first();
             if ($local_user) {   //之前关注过
                 echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎回来~  ' . $local_user['nickname'] . ']]></Content></xml>';
+                $res = WxUserModel::where($where)->update(['sub_status'=>1]);
             } else {             //首次关注
                 //获取用户信息
                 $userInfo = $this->getUserInfo($openid);
@@ -80,7 +81,11 @@ class WxController extends Controller
                 'openid'=>$openid
             ];
             $res = WxUserModel::where($where)->update(['sub_status'=>2]);
-            dump($res);
+            if($res){
+                echo '取消关注成功';
+            }else{
+                echo '取消关注失败';
+            }
         }
         //处理文本内容素材
         if($MsgType=='text'){
