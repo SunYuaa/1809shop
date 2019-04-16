@@ -195,6 +195,43 @@ class WxController extends Controller
     }
 
     /**
+     * 群发消息
+     * @param $openid_arr
+     * @param $content
+     */
+    public function sendMsg($openid_arr,$content)
+    {
+        $msg = [
+            'touser' => $openid_arr,
+            'msgtype' => 'text',
+            'text' => [
+                'content' => $content
+            ]
+        ];
+
+        $data = json_encode($msg,JSON_UNESCAPED_UNICODE);   //处理中文编码
+        $url = 'https://api.weixin.qq.com/cgi-bin/message/mass/send?access_token='.$this->getAccessToken();
+        //发送数据
+        $client = new Client();
+        $response = $client->request('post',$url,[
+            'body' => $data
+        ]);
+        return $response->getBody();
+
+    }
+    /**
+     * 发送群发内容
+     */
+    public function send(){
+        $openid_list = WxUserModel::where(['sub_status'=>1])->get()->toArray();
+        $openid_arr = array_column($openid_list,'openid');
+        print_r($openid_arr);
+        $content = '测试测试这是测试再说一遍这是测试over';
+        $response = $this->sendMsg($openid_arr,$content);
+        return $response;
+    }
+
+    /**
      * 自定义菜单
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
@@ -263,9 +300,9 @@ class WxController extends Controller
         $key = 'wx_access_token';
         $token = Redis::get($key);
         if($token){
-            echo 'cache';
+            echo 'cache';echo "\n";
         }else{
-            echo 'Nocache';
+            echo 'Nocache';echo "\n";
             $url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid='.env('WX_APPID').'&secret='.env('WX_SECRET').'';
             $response = file_get_contents($url);
             $arr = json_decode($response,true);
