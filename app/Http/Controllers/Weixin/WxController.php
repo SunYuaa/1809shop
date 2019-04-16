@@ -74,6 +74,14 @@ class WxController extends Controller
                 echo '<xml><ToUserName><![CDATA[' . $openid . ']]></ToUserName><FromUserName><![CDATA[' . $wx_id. ']]></FromUserName><CreateTime>' . time() . '</CreateTime><MsgType><![CDATA[text]]></MsgType><Content><![CDATA[' . '欢迎关注~  ' . $userInfo['nickname'] . ']]></Content></xml>';
             }
         }
+        //用户取消关注
+        if($event=='unsubscribe'){
+            $where = [
+                'openid'=>$openid
+            ];
+            $res = WxUserModel::where($where)->update(['sub_status'=>2]);
+            dump($res);
+        }
         //处理文本内容素材
         if($MsgType=='text'){
             //天气回复
@@ -277,6 +285,7 @@ class WxController extends Controller
         $u = json_decode($data,true);
         return $u;
     }
+
 }
 
 
