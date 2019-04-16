@@ -47,6 +47,7 @@ class WxController extends Controller
         $openid = $data->FromUserName;  //用户OpenId
         $event = $data->Event;          //事件类型
         $MsgType = $data->MsgType;      //素材类型
+        echo $MsgType;
 
         //扫码关注自动回复消息
         if($event=='subscribe') {
@@ -82,6 +83,7 @@ class WxController extends Controller
                 'createTime' => $data->CreateTime,
                 'content' => $data->Content
             ];
+            print_r($textData);
             $res = WxTextModel::insert($textData);
             if($res){
                 echo '内容添加成功';
@@ -89,6 +91,8 @@ class WxController extends Controller
                 echo '内容添加失败';
             }
         }
+
+        die;
         //处理图片素材
         if($MsgType=='image'){
             $media_id = $data->MediaId;
