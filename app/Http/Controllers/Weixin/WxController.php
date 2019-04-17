@@ -258,6 +258,8 @@ class WxController extends Controller
      * 群发消息
      * @param $openid_arr
      * @param $content
+     * @return \Psr\Http\Message\StreamInterface
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function sendMsg($openid_arr,$content)
     {
