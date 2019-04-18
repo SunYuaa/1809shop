@@ -29,3 +29,7 @@ Route::get('weixin/valid','Weixin\WxController@valid');    //第一次接口测�
 Route::post('weixin/valid','Weixin\WxController@event');    //微信事件
 Route::get('weixin/access_token','Weixin\WxController@getAccessToken');   //获取access_token
 Route::get('weixin/send','Weixin\WxController@send');   //群发消息
+
+
+//微信支付
+Route::get('weixin/pay/test','Weixin\WxpayController@test');
